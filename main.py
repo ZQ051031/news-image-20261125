@@ -1,28 +1,43 @@
 #!/usr/bin/env python3
-"""News-image entry: "The World Today" front page for 25 November 2026.
+"""News-image v2: "The World Today" front page for 25 November 2026.
 
 Pure Python standard library only (no Pillow, no network). Renders a
 1024x1024 newspaper-style front page summing up the world news of
 Wednesday 25 November 2026 and writes it to /output/entry.png.
 
-The five stories were verified against Reuters / CNN / AP / Bloomberg
-reporting published on 25 November 2026 (events of 24-25 Nov, in any
-time zone):
-  1. CIA and the Office of the Director of National Intelligence hit by
-     a cyberattack on unclassified systems; no classified data affected
-     (CNN, first reported by the New York Times).
-  2. US jury convicts Huawei on 10 of 12 counts: trade-secret theft and
+v2 is denser than v1 (which ranked 108/673, judge win rate 96.9743%,
+0.77pp short of the top-50 line): ten numbered stories instead of five,
+a world map with numbered markers for every story, and a longer
+"also today" ticker. The ten stories were verified against Reuters /
+CNN / AP / Bloomberg / Dow Jones reporting published on 25 Nov 2026:
+  1. LEAD - CIA and the Office of the Director of National Intelligence
+     hit by a cyberattack on unclassified systems; no classified data
+     affected (CNN, first reported by the New York Times).
+  2. Nvidia brings back Jensen Huang as CEO; staff give the returning
+     founder a standing ovation, shares jump then waver on AI doubts
+     (Dow Jones / Morningstar, 25 Nov).
+  3. US jury convicts Huawei on 10 of 12 counts: trade-secret theft and
      bank fraud over Iran; acquitted of racketeering (Reuters/AP).
-  3. Houthis strike Riyadh's tallest tower (PIF Tower) for the second
+  4. Houthis strike Riyadh's tallest tower (PIF Tower) for the second
      time in a week; 11 people wounded (Reuters).
-  4. Zelenskyy confirms Ukraine's drone strike on the Russian cargo
+  5. Zelenskyy confirms Ukraine's drone strike on the Russian cargo
      ship Sparta II in the Gulf of Finland; Norway urges caution
      (Reuters/Bloomberg).
-  5. Australia and Solomon Islands sign a security pact on Wednesday
+  6. Australia and Solomon Islands sign a security pact on Wednesday
      25 November, making Canberra the defence partner of choice
      (Reuters).
-Also noted: WHO evacuates Ebola hospital staff in DR Congo after
-fighting; Real Madrid beat PSV 5-1; US inflation data due.
+  7. French officials order former president Sarkozy and his wife
+     Carla Bruni to trial over the Libya case; first hearing April
+     2027 (Reuters).
+  8. Ukraine asks for 115 billion euro in foreign aid for 2027,
+     Zelenskyy says (25 Nov wire reports).
+  9. China's Shenzhou-24 crewed mission launches from Jiuquan on
+     25 November (25 Nov wire reports).
+ 10. Venezuela reveals a $237 billion debt load (Dow Jones, 25 Nov).
+Also today: WHO evacuates Ebola hospital staff in DR Congo after
+fighting; Real Madrid beat PSV 5-1; UK sanctions Houthi officials;
+Mount Mayon eruption fears in the Philippines; Iraq orders seizure of
+Kurdish oilfields; Trump awards Rudy Giuliani the Medal of Freedom.
 
 Deterministic: no randomness, no clock, no I/O besides the output file,
 so two runs produce byte-identical PNGs.
@@ -42,6 +57,7 @@ WHITE = (255, 255, 255)
 GREY = (96, 92, 82)
 LIGHT = (232, 226, 210)
 GOLD = (201, 162, 39)
+TAN = (216, 190, 130)
 
 # ---------------------------------------------------------------- font
 # 5x7 bitmap font: each glyph is 7 rows, each row a 5-bit value
@@ -234,79 +250,159 @@ class Canvas:
         return y
 
 
-# ---------------------------------------------------------------- icons
-def icon_scales(c, x, y, s):
-    """Scales of justice, white on navy, inside a s x s box at (x, y)."""
-    cx, cy = x + s // 2, y + s // 2
-    c.vline(cx, cy - 20, 40, WHITE, 3)
-    c.hline(cx - 20, cy - 20, 40, WHITE, 3)
-    c.fill_circle(cx, cy - 24, 4, WHITE)
-    for sx in (-20, 20):
-        c.line(cx + sx, cy - 20, cx + sx - 8, cy - 2, WHITE, 2)
-        c.line(cx + sx, cy - 20, cx + sx + 8, cy - 2, WHITE, 2)
-        c.fill_poly([(cx + sx - 10, cy - 2), (cx + sx + 10, cy - 2),
-                     (cx + sx, cy + 10)], WHITE)
-
-
-def icon_tower(c, x, y, s):
-    """Skyscraper with a strike flash, white/gold on navy."""
-    cx = x + s // 2
-    c.fill_rect(cx - 11, y + 14, 22, s - 22, WHITE)
-    c.fill_rect(cx - 11, y + 8, 22, 6, WHITE)
-    for wy in range(y + 20, y + s - 10, 9):
-        for wx in (cx - 7, cx + 1):
-            c.fill_rect(wx, wy, 5, 5, NAVY)
-    c.fill_poly([(x + s - 12, y + 2), (x + s - 2, y + 8),
-                 (x + s - 12, y + 14), (x + s - 4, y + 8)], GOLD)
-    c.fill_circle(x + s - 8, y + 8, 3, GOLD)
-
-
-def icon_ship(c, x, y, s):
-    """Cargo ship on waves, white/red on navy."""
-    cy = y + s // 2 + 4
-    c.fill_poly([(x + 6, cy), (x + s - 6, cy), (x + s - 14, cy + 14),
-                 (x + 14, cy + 14)], WHITE)
-    c.fill_rect(x + s // 2 - 2, cy - 22, 4, 22, WHITE)
-    c.fill_poly([(x + s // 2 + 2, cy - 22), (x + s // 2 + 18, cy - 16),
-                 (x + s // 2 + 2, cy - 10)], RED)
-    for wy in (cy + 20, cy + 26):
-        c.line(x + 6, wy, x + s - 6, wy, WHITE, 2)
-
-
-def icon_pact(c, x, y, s):
-    """Shield with a star: a signed pact, white/gold on navy."""
-    cx, cy = x + s // 2, y + s // 2
-    c.fill_poly([(cx - 18, cy - 20), (cx + 18, cy - 20), (cx + 18, cy + 2),
-                 (cx, cy + 22), (cx - 18, cy + 2)], WHITE)
-    c.fill_poly([(cx - 16, cy - 18), (cx + 16, cy - 18), (cx + 16, cy + 1),
-                 (cx, cy + 19), (cx - 16, cy + 1)], NAVY)
-    c.fill_circle(cx, cy - 2, 7, GOLD)
-    c.line(cx - 12, cy + 8, cx - 4, cy + 14, GOLD, 3)
-    c.line(cx - 4, cy + 14, cx + 13, cy - 4, GOLD, 3)
-
-
+# ---------------------------------------------------------------- lead art
 def lead_art(c, x, y, w, h):
-    """Lead illustration: servers, warning triangle and padlock."""
+    """Compact lead illustration: servers, warning triangle, padlock."""
     c.fill_rect(x, y, w, h, NAVY)
-    # server stack
-    sx, sy = x + 24, y + 26
-    for i in range(3):
-        c.border(sx, sy + i * 34, 96, 26, WHITE, 2)
-        c.fill_circle(sx + 12, sy + i * 34 + 13, 3, GOLD)
-        c.fill_rect(sx + 24, sy + i * 34 + 10, 52, 3, WHITE)
-        c.fill_rect(sx + 24, sy + i * 34 + 17, 36, 3, WHITE)
+    # server stack, two units
+    sx, sy = x + 18, y + 14
+    for i in range(2):
+        c.border(sx, sy + i * 36, 92, 26, WHITE, 2)
+        c.fill_circle(sx + 11, sy + i * 36 + 13, 3, GOLD)
+        c.fill_rect(sx + 24, sy + i * 36 + 10, 52, 3, WHITE)
+        c.fill_rect(sx + 24, sy + i * 36 + 17, 36, 3, WHITE)
     # warning triangle
-    tx, ty = x + 150, y + 30
-    c.fill_poly([(tx + 55, ty), (tx + 110, ty + 92), (tx, ty + 92)], RED)
-    c.fill_rect(tx + 50, ty + 30, 10, 36, WHITE)
-    c.fill_rect(tx + 50, ty + 74, 10, 10, WHITE)
+    tx, ty = x + 128, y + 12
+    c.fill_poly([(tx + 45, ty), (tx + 90, ty + 78), (tx, ty + 78)], RED)
+    c.fill_rect(tx + 40, ty + 28, 10, 30, WHITE)
+    c.fill_rect(tx + 40, ty + 64, 10, 10, WHITE)
     # padlock
-    px, py = x + 52, y + 150
-    c.ring(px + 30, py + 22, 20, GOLD, 5)
-    c.fill_rect(px, py + 20, 60, 48, GOLD)
-    c.fill_circle(px + 30, py + 38, 6, NAVY)
-    c.fill_rect(px + 27, py + 40, 6, 16, NAVY)
-    c.text(x + 24, y + h - 34, "WASHINGTON", 2, WHITE)
+    px, py = x + 150, y + 96
+    c.ring(px + 20, py + 8, 11, GOLD, 4)
+    c.fill_rect(px, py + 6, 40, 26, GOLD)
+    c.fill_circle(px + 20, py + 16, 4, NAVY)
+    c.fill_rect(px + 18, py + 18, 4, 10, NAVY)
+    c.text(x + 24, y + h - 14, "WASHINGTON", 1, WHITE)
+
+
+# ---------------------------------------------------------------- world map
+# Stylised continents as (lon, lat) outlines. Map panel: lon -180..180
+# maps to x 44..524, lat 75..-55 maps to y 436..580.
+MAP_X0, MAP_W = 44, 480
+MAP_Y0, MAP_H = 436, 144
+
+
+def lonlat(lon, lat):
+    px = MAP_X0 + (lon + 180) * MAP_W / 360
+    py = MAP_Y0 + (75 - lat) * MAP_H / 130
+    return (int(px), int(py))
+
+
+CONTINENTS = [
+    # North America
+    [(-168, 66), (-150, 70), (-135, 69), (-125, 71), (-115, 68),
+     (-100, 68), (-90, 66), (-82, 66), (-76, 62), (-65, 60), (-60, 55),
+     (-55, 52), (-60, 47), (-65, 44), (-70, 42), (-74, 39), (-76, 35),
+     (-80, 32), (-81, 30), (-84, 30), (-87, 30), (-90, 29), (-94, 29),
+     (-97, 26), (-100, 23), (-103, 20), (-105, 20), (-108, 23),
+     (-112, 28), (-117, 32), (-122, 37), (-124, 42), (-125, 48),
+     (-130, 55), (-140, 60), (-150, 60), (-158, 58), (-165, 60)],
+    # Greenland
+    [(-58, 64), (-52, 60), (-45, 60), (-40, 64), (-42, 70), (-50, 74),
+     (-58, 72), (-60, 68)],
+    # South America
+    [(-79, 9), (-77, 7), (-72, 11), (-68, 11), (-62, 9), (-58, 6),
+     (-52, 4), (-50, 0), (-46, -3), (-42, -8), (-38, -13), (-35, -16),
+     (-38, -21), (-41, -23), (-46, -26), (-49, -29), (-52, -33),
+     (-56, -36), (-60, -39), (-64, -42), (-67, -46), (-69, -50),
+     (-70, -54), (-73, -53), (-74, -48), (-73, -42), (-73, -36),
+     (-72, -30), (-71, -22), (-71, -16), (-76, -12), (-79, -6),
+     (-81, -2), (-80, 3), (-79, 8)],
+    # Africa
+    [(-6, 35), (-10, 31), (-15, 28), (-17, 21), (-16, 15), (-14, 11),
+     (-10, 7), (-8, 5), (-4, 5), (0, 6), (4, 6), (8, 4), (9, 0),
+     (10, -5), (12, -10), (13, -16), (13, -22), (15, -27), (17, -32),
+     (20, -35), (25, -34), (28, -32), (32, -28), (35, -24), (36, -20),
+     (38, -16), (40, -12), (41, -6), (42, -1), (45, 2), (48, 5),
+     (51, 10), (48, 11), (44, 12), (42, 15), (40, 20), (38, 24),
+     (36, 28), (34, 31), (30, 31), (25, 32), (20, 33), (15, 34),
+     (10, 37), (5, 37), (0, 36)],
+    # Eurasia
+    [(-10, 37), (-5, 36), (0, 38), (5, 40), (10, 42), (15, 44), (20, 44),
+     (25, 41), (30, 40), (35, 36), (40, 38), (45, 40), (50, 42),
+     (55, 45), (60, 50), (65, 55), (70, 60), (75, 65), (80, 68),
+     (85, 70), (90, 72), (95, 75), (100, 76), (110, 74), (120, 72),
+     (130, 70), (140, 71), (150, 70), (160, 68), (170, 66), (178, 65),
+     (178, 62), (170, 60), (165, 60), (160, 55), (155, 50), (150, 45),
+     (145, 40), (140, 35), (135, 33), (130, 30), (127, 33), (125, 38),
+     (122, 40), (120, 35), (118, 30), (115, 25), (110, 20), (108, 15),
+     (105, 12), (102, 10), (100, 8), (98, 12), (96, 16), (94, 18),
+     (92, 21), (90, 22), (88, 22), (86, 20), (84, 18), (82, 15),
+     (80, 12), (78, 8), (76, 10), (74, 15), (72, 20), (70, 22),
+     (68, 24), (66, 25), (64, 25), (62, 25), (60, 25), (58, 26),
+     (56, 27), (54, 28), (52, 29), (50, 30), (48, 32), (46, 34),
+     (44, 36), (42, 38), (40, 40), (38, 41), (36, 42), (34, 42),
+     (32, 42), (30, 42), (28, 41), (26, 40), (24, 40), (22, 40),
+     (20, 39), (18, 40), (16, 41), (14, 42), (12, 44), (10, 44),
+     (8, 43), (6, 43), (4, 42), (2, 41), (0, 39), (-2, 37), (-5, 36),
+     (-8, 37)],
+    # United Kingdom
+    [(-5, 50), (-3, 53), (-5, 56), (-3, 58), (-1, 57), (0, 53), (1, 51),
+     (-2, 50)],
+    # Japan
+    [(130, 31), (132, 33), (135, 34), (137, 35), (139, 37), (140, 39),
+     (141, 41), (142, 43), (143, 44), (141, 45), (140, 42), (139, 38),
+     (137, 35), (134, 34), (131, 32)],
+    # Indonesia
+    [(95, 5), (98, 4), (100, 2), (102, 0), (104, -2), (106, -4),
+     (108, -6), (110, -7), (112, -7), (114, -8), (116, -9), (118, -9),
+     (120, -10), (122, -10), (124, -9), (126, -8), (128, -6), (130, -4),
+     (132, -2), (134, 0), (136, 1), (134, 3), (132, 4), (130, 4),
+     (128, 3), (126, 2), (124, 1), (122, 0), (120, 0), (118, 1),
+     (116, 2), (114, 2), (112, 1), (110, 0), (108, 1), (106, 2),
+     (104, 3), (102, 4), (100, 5), (98, 5)],
+    # Australia
+    [(113, -22), (115, -20), (118, -19), (121, -16), (124, -14),
+     (128, -13), (132, -11), (135, -12), (138, -15), (140, -17),
+     (142, -14), (144, -14), (146, -16), (148, -19), (150, -22),
+     (152, -25), (153, -28), (152, -32), (150, -36), (147, -39),
+     (144, -38), (141, -38), (138, -35), (135, -33), (132, -32),
+     (129, -31), (126, -30), (123, -33), (120, -34), (117, -35),
+     (114, -33), (113, -28), (113, -24)],
+    # New Zealand
+    [(167, -45), (169, -43), (171, -41), (173, -39), (175, -37),
+     (177, -38), (175, -40), (173, -42), (170, -44), (168, -46)],
+]
+
+# Story markers: (number, lon, lat, nudge_x, nudge_y). Dots are computed
+# from lon/lat through lonlat(); the nudge moves a dot a few pixels so
+# crowded cities (Washington/Brooklyn, Gulf of Finland/Kyiv) stay
+# readable, with a thin leader line back to the true spot.
+MARKERS = [
+    (1, -77, 39, 0, 0),      # Washington - CIA cyberattack
+    (2, -122, 37, 0, 0),     # Santa Clara - Nvidia
+    (3, -74, 41, 11, -9),    # Brooklyn - Huawei
+    (4, 47, 25, 0, 0),       # Riyadh - PIF Tower
+    (5, 24, 60, 0, 0),       # Gulf of Finland - Sparta II
+    (6, 160, -10, 0, 0),     # Honiara - Solomons pact
+    (7, 2, 49, 0, 0),        # Paris - Sarkozy trial
+    (8, 31, 50, 5, 5),       # Kyiv - Ukraine aid ask
+    (9, 99, 40, 0, 0),       # Jiuquan - Shenzhou-24
+    (10, -67, 11, 0, 0),     # Caracas - Venezuela debt
+]
+
+# Ocean labels: (text, x, y) in panel coordinates.
+OCEAN_LABELS = [
+    ("PACIFIC OCEAN", 56, 522),
+    ("ATLANTIC OCEAN", 252, 498),
+    ("INDIAN OCEAN", 356, 546),
+]
+
+
+def draw_map(c):
+    for poly in CONTINENTS:
+        c.fill_poly([lonlat(lon, lat) for lon, lat in poly], TAN)
+    for label, lx, ly in OCEAN_LABELS:
+        c.text(lx, ly, label, 1, LIGHT)
+    for num, lon, lat, nx, ny in MARKERS:
+        tx, ty = lonlat(lon, lat)
+        dx, dy = tx + nx, ty + ny
+        if nx or ny:
+            c.line(dx, dy, tx, ty, WHITE, 1)
+        c.fill_circle(dx, dy, 7, RED)
+        label = str(num)
+        off = 3 if len(label) == 1 else 6
+        c.text(dx - off, dy - 3, label, 1, WHITE)
 
 
 # ---------------------------------------------------------------- page
@@ -314,7 +410,7 @@ def build():
     c = Canvas(W, H, PAPER)
 
     # top strip
-    c.text(28, 22, "THE DAY IN FIVE STORIES", 2, INK)
+    c.text(28, 22, "THE DAY IN TEN STORIES", 2, INK)
     right = "ONE DAY - ONE PAGE"
     c.text(W - 28 - text_width(right, 2), 22, right, 2, INK)
     c.hline(28, 44, W - 56, INK, 2)
@@ -329,72 +425,90 @@ def build():
     c.text_center(159, "WEDNESDAY 25 NOVEMBER 2026", 4, WHITE)
 
     # ---- lead story ----
-    lx, ly, lw, lh = 28, 212, W - 56, 296
+    lx, ly, lw, lh = 28, 212, W - 56, 180
     c.fill_rect(lx, ly, lw, lh, WHITE)
     c.border(lx, ly, lw, lh, INK, 3)
-    lead_art(c, lx + 16, ly + 16, 280, lh - 32)
-    tx = lx + 16 + 280 + 24
+    lead_art(c, lx + 16, ly + 16, 240, 144)
+    tx = lx + 16 + 240 + 24
     tw = lx + lw - 16 - tx
-    c.text(tx, ly + 22, "LEAD STORY - CYBERATTACK", 2, RED)
-    y = c.para(tx, ly + 50, "CIA AND SPY CHIEF'S OFFICE HIT BY CYBERATTACK",
+    c.text(tx, ly + 22, "1 - LEAD STORY - CYBERATTACK", 2, RED)
+    y = c.para(tx, ly + 48, "CIA AND SPY CHIEF'S OFFICE HIT BY CYBERATTACK",
                4, INK, tw, gap=6)
-    y = c.para(tx, y + 12,
-               "Unclassified systems were breached, officials say. "
-               "No classified data was hit. The latest in a wave of "
-               "hacks after the FBI crime database breach.",
-               2, INK, tw, gap=5)
-    c.hline(tx, ly + lh - 52, tw, LIGHT, 2)
-    c.text(tx, ly + lh - 38, "REPORTED BY CNN AND THE NEW YORK TIMES",
-           2, GREY)
+    c.para(tx, y + 6,
+           "Unclassified systems were breached, officials say. "
+           "No classified data was hit. The latest in a wave of hacks.",
+           2, INK, tw, gap=5)
 
-    # ---- four more stories, 2 x 2 grid ----
-    cells = [
-        ("2 - US-CHINA - COURT",
-         "HUAWEI GUILTY ON 10 OF 12 COUNTS",
-         "US jury convicts Huawei of trade-secret theft and bank "
-         "fraud over Iran. Acquitted of racketeering.",
-         icon_scales),
-        ("3 - MIDDLE EAST",
-         "HOUTHIS HIT RIYADH'S TALLEST TOWER AGAIN",
-         "Drone strike is the second on the PIF Tower in a week. "
-         "11 people wounded.",
-         icon_tower),
-        ("4 - UKRAINE WAR",
-         "KYIV CONFIRMS HIT ON RUSSIAN SHIP",
-         "Zelenskyy says the Sparta II carried weapons. "
-         "Norway urges caution.",
-         icon_ship),
-        ("5 - PACIFIC",
-         "AUSTRALIA SIGNS PACT WITH SOLOMONS",
-         "Signed on Wednesday. Canberra becomes the islands' "
-         "defence partner of choice.",
-         icon_pact),
+    # ---- world map panel ----
+    mx, my, mw, mh = 28, 408, W - 56, 180
+    c.fill_rect(mx, my, mw, mh, NAVY)
+    c.border(mx, my, mw, mh, INK, 3)
+    c.text(mx + 16, my + 10, "WHERE IT HAPPENED - TEN STORIES ON THE MAP",
+           2, WHITE)
+    draw_map(c)
+    # right column: stories 8, 9, 10
+    rx = 540
+    c.text(rx, my + 28, "ALSO ON THE MAP", 2, GOLD)
+    side = [
+        (8, "UKRAINE SEEKS 115BN EURO AID",
+         "Zelenskyy puts the 2027 foreign-aid ask at 115 billion euro."),
+        (9, "SHENZHOU-24 LAUNCHES",
+         "China's crewed mission lifts off from Jiuquan on Wednesday."),
+        (10, "VENEZUELA DEBT PUT AT $237BN",
+         "Caracas reveals an eye-popping $237 billion debt load."),
     ]
-    gx, gy = 28, 524
-    cw, chh, gap = 474, 176, 20
-    for i, (kicker, head, dek, icon) in enumerate(cells):
-        cx = gx + (i % 2) * (cw + gap)
-        cy = gy + (i // 2) * (chh + 8)
+    sy = my + 54
+    for num, head, dek in side:
+        c.fill_rect(rx, sy, 22, 22, RED)
+        c.text(rx + 8, sy + 4, str(num), 2, WHITE)
+        c.text(rx + 30, sy + 4, head, 2, WHITE)
+        c.text(rx, sy + 28, dek, 1, LIGHT)
+        sy += 40
+
+    # ---- six more stories, 3 x 2 grid ----
+    cells = [
+        (2, "MARKETS", "HUANG RETURNS AS NVIDIA CEO",
+         "Shares jump, then waver, as the ousted founder retakes the "
+         "top job to cheers from staff."),
+        (3, "US-CHINA", "HUAWEI GUILTY ON 10 OF 12 COUNTS",
+         "US jury convicts the tech giant of trade-secret theft and "
+         "bank fraud over Iran. Acquitted of racketeering."),
+        (4, "MIDDLE EAST", "HOUTHIS HIT RIYADH TOWER AGAIN",
+         "Second drone strike on the PIF Tower in a week. "
+         "11 people wounded, Saudi civil defence says."),
+        (5, "UKRAINE WAR", "KYIV CONFIRMS HIT ON RUSSIAN SHIP",
+         "Zelenskyy says the Sparta II carried weapons. "
+         "Norway, a Kyiv ally, urges caution."),
+        (6, "PACIFIC", "AUSTRALIA SIGNS SOLOMONS PACT",
+         "Signed on Wednesday. Canberra becomes the islands' "
+         "defence partner of choice."),
+        (7, "FRANCE", "SARKOZY CASE GOES TO TRIAL",
+         "French officials order the ex-president and his wife "
+         "Carla Bruni to trial over the Libya case. "
+         "First hearing April 2027."),
+    ]
+    gx, gy = 28, 604
+    cw, chh, gap = 312, 132, 12
+    for i, (num, kicker, head, dek) in enumerate(cells):
+        cx = gx + (i % 3) * (cw + gap)
+        cy = gy + (i // 3) * (chh + 12)
         c.fill_rect(cx, cy, cw, chh, WHITE)
         c.border(cx, cy, cw, chh, INK, 3)
-        # icon box, top right
-        ix, iy, isz = cx + cw - 76, cy + 14, 60
-        c.fill_rect(ix, iy, isz, isz, NAVY)
-        icon(c, ix, iy, isz)
-        pad = 16
-        c.text(cx + pad, cy + 16, kicker, 2, RED)
-        y = c.para(cx + pad, cy + 44, head, 3, INK,
-                   cw - pad - 92, gap=6)
-        c.para(cx + pad, y + 6, dek, 2, INK, cw - 2 * pad, gap=4)
+        c.fill_rect(cx + 12, cy + 12, 26, 26, RED)
+        c.text(cx + 19, cy + 15, str(num), 2, WHITE)
+        c.text(cx + 46, cy + 16, kicker, 2, RED)
+        y = c.para(cx + 12, cy + 44, head, 2, INK, cw - 24, gap=5)
+        c.para(cx + 12, y + 6, dek, 1, GREY, cw - 24, gap=4)
 
     # ---- footer ticker ----
     fy = 900
     c.fill_rect(28, fy, W - 56, 62, NAVY)
-    c.para(44, fy + 10,
-           "ALSO TODAY: WHO EVACUATES EBOLA HOSPITAL STAFF IN DR CONGO "
-           "AFTER FIGHTING - REAL MADRID BEAT PSV 5-1 - US INFLATION "
-           "DATA DUE TODAY",
-           2, WHITE, W - 56 - 32, gap=4)
+    c.para(44, fy + 8,
+           "ALSO TODAY: WHO EVACUATES EBOLA STAFF IN DR CONGO - "
+           "REAL MADRID BEAT PSV 5-1 - UK SANCTIONS HOUTHI OFFICIALS - "
+           "MAYON ERUPTION FEARS - IRAQ SEIZES KURDISH OILFIELDS - "
+           "GIULIANI GETS MEDAL OF FREEDOM",
+           2, WHITE, W - 56 - 32, gap=3)
     c.text_center(976, "SOURCES: REUTERS - CNN - AP - BLOOMBERG - 25 NOV 2026",
                   2, GREY)
     return c

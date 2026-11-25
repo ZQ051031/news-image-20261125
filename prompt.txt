@@ -1,0 +1,42 @@
+Build v2 of the make.fun news-image-20261125 entry ("The World Today").
+
+Goal: a denser front page than v1 (which ranked 108/673, judge win rate
+96.9743%, 0.77pp short of the top-50 line at 97.7406%). The v2 must
+carry ten numbered stories from Wednesday 25 November 2026 plus a world
+map with a numbered marker for every story, keeping the newspaper look.
+
+Stories (all verified against Reuters / CNN / AP / Bloomberg / Dow Jones
+reporting published on 25 November 2026):
+1. LEAD: CIA and the Office of the Director of National Intelligence hit
+   by a cyberattack on unclassified systems; no classified data hit.
+2. Nvidia brings back Jensen Huang as CEO; shares jump then waver.
+3. US jury convicts Huawei on 10 of 12 counts (trade-secret theft and
+   bank fraud over Iran; acquitted of racketeering).
+4. Houthis strike Riyadh's PIF Tower a second time in a week; 11 wounded.
+5. Zelenskyy confirms Ukraine's drone strike on the Russian cargo ship
+   Sparta II in the Gulf of Finland; Norway urges caution.
+6. Australia and Solomon Islands sign a security pact.
+7. French officials order ex-president Sarkozy and his wife Carla Bruni
+   to trial over the Libya case; first hearing April 2027.
+8. Ukraine asks for 115 billion euro in foreign aid for 2027.
+9. China's Shenzhou-24 crewed mission launches from Jiuquan.
+10. Venezuela reveals a $237 billion debt load.
+Footer ticker: WHO evacuates Ebola hospital staff in DR Congo; Real
+Madrid beat PSV 5-1; UK sanctions Houthi officials; Mount Mayon
+eruption fears; Iraq orders seizure of Kurdish oilfields; Trump awards
+Rudy Giuliani the Medal of Freedom.
+
+Constraints: pure Python standard library only (no Pillow — the grader
+container is stdlib-only, no network). Render entry.png yourself in
+session: 1024x1024, at most 1 MiB, byte-identical across two runs.
+Layout: masthead "THE WORLD TODAY" with red dateline band; lead story
+with a compact servers/triangle/padlock illustration; navy world-map
+panel drawn from hand-written lon/lat continent outlines with numbered
+red markers (positions computed from the same projection as the land,
+nudged with leader lines where cities crowd); stories 8-10 listed
+beside the map; six stories in a 3x2 grid with red number badges;
+footer ticker and source line.
+
+Write main.py and README.md each in two separate messages: first write
+each file, then genuinely revise each file afterwards. Do not mention
+Devin or AI anywhere. Do not submit; a finisher handles bundling.
